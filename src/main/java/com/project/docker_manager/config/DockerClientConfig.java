@@ -11,45 +11,27 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 public class DockerClientConfig {
 
-    @Value("${docker.host}")
-    private String dockerHost;
-
-    @Value("${docker.tls.verify}")
-    private boolean dockerTlsVerify;
-
-    @Value("${docker.cert.path}")
-    private String dockerCertPath;
-
-    @Value("${docker.registry.user}")
-    private String registryUser;
-
-    @Value("${docker.registry.pass}")
-    private String registryPass;
-
-    @Value("${docker.registry.mail}")
-    private String registryMail;
-
-    @Value("${docker.registry.url}")
-    private String registryUrl;
+    @Value("${docker.socket.path}")
+    private String dockerSocketPath;
 
     @Bean
     public DockerClient buildDockerClient() {
-        DefaultDockerClientConfig config = DefaultDockerClientConfig.createDefaultConfigBuilder()
-                .withDockerHost(dockerHost)
-                .withDockerTlsVerify(dockerTlsVerify)
-                .withDockerCertPath(dockerCertPath)
-                .withRegistryUsername(registryUser)
-                .withRegistryPassword(registryPass)
-                .withRegistryEmail(registryMail)
-                .withRegistryUrl(registryUrl)
+        DefaultDockerClientConfig.Builder dockerClientConfigBuilder = DefaultDockerClientConfig
+                .createDefaultConfigBuilder();
+
+        if (this.dockerSocketPath != null && this.dockerSocketPath.startsWith("unix://")) {
+            dockerClientConfigBuilder.withDockerHost(dockerSocketPath)
+                    .withDockerTlsVerify(false);
+        }
+
+        DefaultDockerClientConfig dockerClientConfig = dockerClientConfigBuilder
                 .build();
 
         ApacheDockerHttpClient dockerHttpClient = new ApacheDockerHttpClient.Builder()
-                .dockerHost(config.getDockerHost()).build();
+                .dockerHost(dockerClientConfig.getDockerHost()).build();
 
-        return DockerClientBuilder.getInstance(config)
-                .withDockerHttpClient(dockerHttpClient)
-                .build();
+        return DockerClientBuilder.getInstance(dockerClientConfig)
+                .withDockerHttpClient(dockerHttpClient).build();
     }
 }
 
